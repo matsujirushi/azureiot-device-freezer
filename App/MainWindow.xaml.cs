@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Threading;
 
 namespace Freezer
@@ -38,9 +39,9 @@ namespace Freezer
                 case DeviceState.Disconnected:
                     btnConnect.IsEnabled = true;
                     btnDisconnect.IsEnabled = false;
-                    txtTelemetryInterval.IsEnabled = false;
-                    txtTemperatureLow.IsEnabled = false;
-                    txtTemperatureHigh.IsEnabled = false;
+                    txtTelemetryInterval.IsEnabled = true;
+                    txtTemperatureLow.IsEnabled = true;
+                    txtTemperatureHigh.IsEnabled = true;
                     break;
                 case DeviceState.Connected:
                     btnConnect.IsEnabled = false;
@@ -67,8 +68,10 @@ namespace Freezer
                 throw new ArgumentException("Required parameters are not set. Please recheck required variables by using \"--help\"");
             }
 
+            Title = $"Freezer - {Parameters_.DeviceId}";
+
             Timer_ = new DispatcherTimer();
-            Timer_.Interval = new TimeSpan(0, 0, 5);
+            Timer_.Interval = new TimeSpan(int.Parse(txtTelemetryInterval.Text) * (long)Math.Pow(10, 7));
             Timer_.Tick += Timer_Tick;
 
             ChangeDeviceState(DeviceState.Disconnected);
@@ -76,30 +79,52 @@ namespace Freezer
 
         private async void btnConnect_Click(object sender, RoutedEventArgs e)
         {
-            using var cts = new CancellationTokenSource(Timeout.InfiniteTimeSpan);
+            Cursor = Cursors.Wait;
+            try
+            {
+                using var cts = new CancellationTokenSource(Timeout.InfiniteTimeSpan);
 
-            Debug.WriteLine("Set up the device client.");
-            DeviceRegistrationResult dpsRegistrationResult = await ProvisionDeviceAsync(Parameters_, cts.Token);
-            var authMethod = new DeviceAuthenticationWithRegistrySymmetricKey(dpsRegistrationResult.DeviceId, Parameters_.DeviceSymmetricKey);
-            Client_ = InitializeDeviceClient(dpsRegistrationResult.AssignedHub, authMethod);
+                Debug.WriteLine("Set up the device client.");
+                DeviceRegistrationResult dpsRegistrationResult = await ProvisionDeviceAsync(Parameters_, cts.Token);
+                var authMethod = new DeviceAuthenticationWithRegistrySymmetricKey(dpsRegistrationResult.DeviceId, Parameters_.DeviceSymmetricKey);
+                Client_ = InitializeDeviceClient(dpsRegistrationResult.AssignedHub, authMethod);
 
-            Timer_.Start();
+                Timer_.Start();
 
-            ChangeDeviceState(DeviceState.Connected);
+                ChangeDeviceState(DeviceState.Connected);
+            }
+            finally
+            {
+                Cursor = null;
+            }
         }
 
         private async void btnDisconnect_Click(object sender, RoutedEventArgs e)
         {
-            Timer_.Stop();
-            await Client_.CloseAsync();
+            Cursor = Cursors.Wait;
+            try
+            {
+                Timer_.Stop();
+                await Client_.CloseAsync();
 
-            ChangeDeviceState(DeviceState.Disconnected);
+                ChangeDeviceState(DeviceState.Disconnected);
+            }
+            finally
+            {
+                Cursor = null;
+            }
         }
 
         private async void Timer_Tick(object sender, EventArgs e)
         {
+            var temperatureLow = double.Parse(txtTemperatureLow.Text);
+            var temperatureHigh = double.Parse(txtTemperatureHigh.Text);
+            var rand = new Random();
+            var temperature = rand.NextDouble() * (temperatureHigh - temperatureLow) + temperatureLow;
+            if (chkOverheat.IsChecked.Value) temperature += 100;
+
             Debug.WriteLine("Send telemetry.");
-            await SendTemperatureTelemetryAsync(Client_, 20.0);
+            await SendTemperatureTelemetryAsync(Client_, temperature);
         }
 
         private async Task<DeviceRegistrationResult> ProvisionDeviceAsync(Parameters parameters, CancellationToken cancellationToken)
@@ -134,9 +159,7 @@ namespace Freezer
 
         private static async Task SendTemperatureTelemetryAsync(DeviceClient _deviceClient, double _temperature)
         {
-            const string telemetryName = "temperature";
-
-            string telemetryPayload = $"{{ \"{telemetryName}\": {_temperature} }}";
+            string telemetryPayload = $"{{ \"temperature\": {_temperature} }}";
             using var message = new Message(Encoding.UTF8.GetBytes(telemetryPayload))
             {
                 ContentEncoding = "utf-8",
@@ -144,7 +167,7 @@ namespace Freezer
             };
 
             await _deviceClient.SendEventAsync(message);
-            Console.WriteLine($"Telemetry: Sent - {{ \"{telemetryName}\": {_temperature}°C }}.");
+            Debug.WriteLine($"Telemetry: Sent - {telemetryPayload}.");
         }
 
     }

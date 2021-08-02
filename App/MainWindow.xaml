@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Freezer"
         mc:Ignorable="d"
-        Title="MainWindow" Height="200" Width="400" Loaded="Window_Loaded">
+        Title="Freezer" Height="200" Width="400" Loaded="Window_Loaded" WindowStartupLocation="CenterScreen">
     <Grid Margin="8">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -15,19 +15,20 @@
         <StackPanel Margin="4">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Telemetry interval" Width="100" Margin="4" TextAlignment="Right"/>
-                <TextBox x:Name="txtTelemetryInterval" Text="5" Width="40" Margin="4" VerticalAlignment="Top"/>
-                <TextBlock Text="seconds" Margin="4" VerticalAlignment="Top"/>
+                <TextBox x:Name="txtTelemetryInterval" Text="5" Width="40" Margin="4"/>
+                <TextBlock Text="seconds" Margin="4"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Temperature low" Width="100" Margin="4" TextAlignment="Right"/>
-                <TextBox x:Name="txtTemperatureLow" Text="20" Width="40" Margin="4" VerticalAlignment="Top"/>
-                <TextBlock Text="C" Margin="4" VerticalAlignment="Top"/>
+                <TextBox x:Name="txtTemperatureLow" Text="-90" Width="40" Margin="4"/>
+                <TextBlock Text="C" Margin="4"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Temperature high" Width="100" Margin="4" TextAlignment="Right"/>
-                <TextBox x:Name="txtTemperatureHigh" Text="20" Width="40" Margin="4" VerticalAlignment="Top"/>
-                <TextBlock Text="C" Margin="4" VerticalAlignment="Top"/>
+                <TextBox x:Name="txtTemperatureHigh" Text="-60" Width="40" Margin="4"/>
+                <TextBlock Text="C" Margin="4"/>
             </StackPanel>
+            <CheckBox x:Name="chkOverheat" Content="Overheat"  Margin="4"/>
         </StackPanel>
         <StackPanel Grid.Column="1">
             <Button x:Name="btnConnect" Content="Connect" Width="80" Height="40" Margin="4" Click="btnConnect_Click"/>
